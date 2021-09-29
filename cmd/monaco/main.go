@@ -29,6 +29,7 @@ import (
 )
 
 func main() {
+	fmt.Println("Hello World!")
 	statusCode := Run(os.Args)
 	os.Exit(statusCode)
 }
@@ -59,6 +60,7 @@ func RunImpl(args []string, fs afero.Fs) (statusCode int) {
 func buildCli(fs afero.Fs) *cli.App {
 	fmt.Print(`You are currently using the old CLI structure which will be used by
 default until monaco version 2.0.0
+
 
 Check out the beta of the new CLI by adding the environment variable
   "NEW_CLI".

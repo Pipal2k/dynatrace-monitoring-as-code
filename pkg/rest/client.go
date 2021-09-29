@@ -18,9 +18,15 @@ package rest
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
+
+	"crypto/tls"
+
+	"golang.org/x/net/proxy"
 
 	"github.com/dynatrace-oss/dynatrace-monitoring-as-code/pkg/util"
 
@@ -81,6 +87,11 @@ type dynatraceClientImpl struct {
 	client         *http.Client
 }
 
+/*const (
+	PROXY_ADDR = os.Getenv("MONACO_SOCK_PROXY")
+	//URL        = "http://skunksworkedp2cg.onion/sites.html"
+)*/
+
 // NewDynatraceClient creates a new DynatraceClient
 func NewDynatraceClient(environmentUrl, token string) (DynatraceClient, error) {
 
@@ -106,10 +117,32 @@ func NewDynatraceClient(environmentUrl, token string) (DynatraceClient, error) {
 		util.Log.Warn("More information: https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication/#-dynatrace-version-1205--token-format")
 	}
 
+	httpTransport := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+
+	val, present := os.LookupEnv("MONACO_SOCKS_PROXY")
+
+	if present {
+
+		dialer, err := proxy.SOCKS5("tcp", val, nil, proxy.Direct)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "can't connect to the proxy:", err)
+			os.Exit(1)
+		}
+
+		httpTransport.Dial = dialer.Dial
+	}
+
+	//httpTransport := &http.Transport{
+	//	TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	//}
+	//httpClient := &http.Client{Transport: httpTransport}
+
 	return &dynatraceClientImpl{
 		environmentUrl: environmentUrl,
 		token:          token,
-		client:         &http.Client{},
+		client:         &http.Client{Transport: httpTransport},
 	}, nil
 }
 
